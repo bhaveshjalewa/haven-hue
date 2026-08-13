@@ -1,53 +1,4 @@
-from pathlib import Path
-import re, base64, json, html as htmlmod
-
-src = Path("/mnt/data/haven_n_hue_standalone(1).html")
-text = src.read_text(encoding="utf-8")
-
-out = Path("/mnt/data/haven-hue-github")
-assets = out / "assets"
-assets.mkdir(parents=True, exist_ok=True)
-
-# Extract embedded images from the original standalone HTML.
-pattern = re.compile(r'data:image/(png|jpeg|jpg|webp);base64,([^"]+)')
-matches = pattern.findall(text)
-image_files = []
-for i, (ext, b64) in enumerate(matches, start=1):
-    ext = "jpg" if ext == "jpeg" else ext
-    fname = f"product-{i}.{ext}"
-    (assets / fname).write_bytes(base64.b64decode(b64))
-    image_files.append(f"assets/{fname}")
-
-# Use the first embedded image as the logo/brand mark and the next unique images
-# for the product cards. The source file is a single self-contained page, so
-# preserving its embedded assets makes the GitHub version self-contained.
-logo = image_files[0] if image_files else ""
-product_imgs = (image_files[1:] + image_files[:8])[:8]
-
-products = [
-    ("small-bouquet", "Small Bouquet Candle", "Bouquet Collection", 439, "Perfect for gifting", "A handcrafted bouquet-style candle made to bring a soft floral aesthetic to your space."),
-    ("large-bouquet", "Large Bouquet Candle", "Bouquet Collection", 1299, "Statement gift", "A premium floral bouquet candle designed as a beautiful gifting and décor piece."),
-    ("medium-bouquet", "Medium Bouquet Candle", "Bouquet Collection", 729, "Made to impress", "A charming handmade floral candle that combines beauty, fragrance and décor."),
-    ("mini-wax", "Mini Scented Wax Tablets", "Scented Wax", 12, "Easy little gifts", "Small scented wax tablets made for fragrance, gifting and everyday little moments."),
-    ("big-bubble", "Big Bubble Candle", "Statement Candles", 250, "Aesthetic décor", "A sculptural bubble candle that adds a modern handmade touch to your space."),
-    ("mini-bubble", "Mini Bubble Candle", "Mini Candles", 99, "Small & charming", "A cute mini bubble candle, ideal for small gifts and aesthetic décor."),
-    ("flower", "Flower Candle", "Floral Collection", 169, "Soft floral look", "A delicate flower-shaped candle handcrafted for gifting and décor."),
-    ("painted-glass", "Handmade Painted Glass Candle", "Hand-Painted", 89, "One-of-a-kind feel", "A handmade candle presented in a beautifully painted glass."),
-]
-
-# Build a single-page, GitHub Pages-compatible store. Orders are submitted through
-# WhatsApp, so no backend/payment service is required for the basic launch.
-products_js = []
-for i, p in enumerate(products):
-    products_js.append({
-        "id": p[0], "name": p[1], "category": p[2], "price": p[3],
-        "tagline": p[4], "description": p[5],
-        "image": product_imgs[i] if i < len(product_imgs) else ""
-    })
-
-products_json = json.dumps(products_js, ensure_ascii=False)
-
-page = r'''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -91,7 +42,7 @@ page = r'''<!DOCTYPE html>
 <body>
 <nav class="nav">
   <div class="nav-inner">
-    <a class="brand" href="#home"><img src="__LOGO__" alt="HAVEN N HUE logo"><span>HAVEN N HUE</span></a>
+    <a class="brand" href="#home"><img src="assets/product-1.png" alt="HAVEN N HUE logo"><span>HAVEN N HUE</span></a>
     <div class="links"><a href="#shop">Shop</a><a href="#story">Our Story</a><a href="#offer">Offer</a><a href="#contact">Contact</a></div>
     <div class="nav-actions"><a class="nav-cta" href="#shop">Explore Collection</a><button class="icon-btn" id="cartOpen" aria-label="Open cart">🛒<span class="cart-count" id="cartCount">0</span></button></div>
   </div>
@@ -105,7 +56,7 @@ page = r'''<!DOCTYPE html>
     <p>Thoughtful handmade candles and gifting pieces designed to bring a little warmth, fragrance and beauty into everyday moments.</p>
     <div class="hero-actions"><a class="btn primary" href="#shop">Shop the collection</a><a class="btn" href="#contact">Get in touch</a></div>
   </div>
-  <div><div class="hero-card"><img src="__HERO__" alt="HAVEN N HUE handmade candle collection"></div><div class="seal">100%<br>handmade</div></div>
+  <div><div class="hero-card"><img src="assets/product-2.png" alt="HAVEN N HUE handmade candle collection"></div><div class="seal">100%<br>handmade</div></div>
 </section>
 
 <section class="section" id="shop">
@@ -124,7 +75,7 @@ page = r'''<!DOCTYPE html>
 
 <section class="section" id="story">
   <div class="story">
-    <div class="story-img"><img src="__STORY__" alt="HAVEN N HUE collection"></div>
+    <div class="story-img"><img src="assets/product-9.jpg" alt="HAVEN N HUE collection"></div>
     <div class="story-copy"><div class="kicker">Our little haven</div><h2>Gifting that feels personal.</h2>
       <p>HAVEN N HUE is a student retail venture built around the idea that small, handmade details can make ordinary moments feel memorable. We curate aesthetic, affordable pieces for birthdays, celebrations, self-care days and thoughtful just-because gifts.</p>
       <div class="bullets"><div class="bullet"><b>Perfect for gifting</b>Pieces made to look beautiful before they are even unwrapped.</div><div class="bullet"><b>Eco-conscious</b>Thoughtfully selected materials and handmade production.</div><div class="bullet"><b>Aesthetic decor</b>Functional candles that also brighten your space.</div><div class="bullet"><b>Made with care</b>Small-batch products with a personal touch.</div></div>
@@ -153,7 +104,7 @@ page = r'''<!DOCTYPE html>
 <div class="toast" id="toast"></div>
 
 <script>
-const PRODUCTS = __PRODUCTS__;
+const PRODUCTS = [{"id": "small-bouquet", "name": "Small Bouquet Candle", "category": "Bouquet Collection", "price": 439, "tagline": "Perfect for gifting", "description": "A handcrafted bouquet-style candle made to bring a soft floral aesthetic to your space.", "image": "assets/product-2.png"}, {"id": "large-bouquet", "name": "Large Bouquet Candle", "category": "Bouquet Collection", "price": 1299, "tagline": "Statement gift", "description": "A premium floral bouquet candle designed as a beautiful gifting and décor piece.", "image": "assets/product-3.jpg"}, {"id": "medium-bouquet", "name": "Medium Bouquet Candle", "category": "Bouquet Collection", "price": 729, "tagline": "Made to impress", "description": "A charming handmade floral candle that combines beauty, fragrance and décor.", "image": "assets/product-4.jpg"}, {"id": "mini-wax", "name": "Mini Scented Wax Tablets", "category": "Scented Wax", "price": 12, "tagline": "Easy little gifts", "description": "Small scented wax tablets made for fragrance, gifting and everyday little moments.", "image": "assets/product-5.jpg"}, {"id": "big-bubble", "name": "Big Bubble Candle", "category": "Statement Candles", "price": 250, "tagline": "Aesthetic décor", "description": "A sculptural bubble candle that adds a modern handmade touch to your space.", "image": "assets/product-6.jpg"}, {"id": "mini-bubble", "name": "Mini Bubble Candle", "category": "Mini Candles", "price": 99, "tagline": "Small & charming", "description": "A cute mini bubble candle, ideal for small gifts and aesthetic décor.", "image": "assets/product-7.jpg"}, {"id": "flower", "name": "Flower Candle", "category": "Floral Collection", "price": 169, "tagline": "Soft floral look", "description": "A delicate flower-shaped candle handcrafted for gifting and décor.", "image": "assets/product-8.jpg"}, {"id": "painted-glass", "name": "Handmade Painted Glass Candle", "category": "Hand-Painted", "price": 89, "tagline": "One-of-a-kind feel", "description": "A handmade candle presented in a beautifully painted glass.", "image": "assets/product-9.jpg"}];
 const WHATSAPP = "918448279322";
 const OFFER_THRESHOLD = 899;
 const FREE_GIFT_QTY = 5;
@@ -252,60 +203,4 @@ document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>closeModal(b.
 categories();renderProducts();renderCart();updateCount();
 </script>
 </body>
-</html>'''
-
-hero_img = product_imgs[0] if product_imgs else ""
-story_img = product_imgs[-1] if product_imgs else hero_img
-page = page.replace("__LOGO__", logo).replace("__HERO__", hero_img).replace("__STORY__", story_img).replace("__PRODUCTS__", products_json)
-
-(out / "index.html").write_text(page, encoding="utf-8")
-
-readme = """# HAVEN N HUE — GitHub Pages Store
-
-A self-contained, static e-commerce website based on the original Haven n Hue standalone design.
-
-## Included
-
-- Premium Haven Hue visual style
-- 8 products
-- Search and category filters
-- Product detail modal
-- Add to cart
-- Quantity controls and remove item
-- Cart saved in browser localStorage
-- ₹899+ offer: 5 free scented wax tablets
-- Checkout form
-- Order number generation
-- WhatsApp order submission
-- Responsive mobile design
-- No payment gateway
-
-## Run locally
-
-Open `index.html` in a browser.
-
-## Publish on GitHub Pages
-
-1. Create a new GitHub repository.
-2. Upload `index.html` and the `assets` folder.
-3. Go to **Settings → Pages**.
-4. Select **Deploy from a branch**.
-5. Select the `main` branch and `/root`.
-6. Save and open the GitHub Pages URL.
-
-## Important limitation
-
-This is a static GitHub Pages version. Orders are sent to Haven Hue through WhatsApp; GitHub Pages itself does not provide a private order database or admin dashboard. A backend such as Supabase can be added later if you want a proper order-management/admin system.
-"""
-(out / "README.md").write_text(readme, encoding="utf-8")
-
-# Copy the uploaded original for reference, without altering it.
-(out / "reference-original.html").write_text(text, encoding="utf-8")
-
-# Zip the complete repository.
-import shutil
-zip_path = shutil.make_archive("/mnt/data/haven-hue-github", "zip", out)
-
-print("Created:", zip_path)
-print("Files:", [str(x.relative_to(out)) for x in out.rglob("*") if x.is_file()])
-print("Images extracted:", len(image_files))
+</html>
