@@ -97,7 +97,8 @@ function add(id,qty,variant=""){
 }
 function addFromDetail(id){const p=P.find(x=>x.id===id),variant=p.options?document.getElementById("doption").value:"";add(id,Number($("#dq").textContent),variant);closeAll()}
 function sameCartItem(i,id,variant){
-  return i.id===id && String(i.variant==null?"":i.variant)===String(variant==null?"":variant);
+  return String(i.id)===String(id) &&
+    String(i.variant==null?"":i.variant)===String(variant==null?"":variant);
 }
 function change(id,variant,d){
   const x=cart.find(i=>sameCartItem(i,id,variant));
@@ -110,9 +111,29 @@ function removeItem(id,variant){
   cart=cart.filter(i=>!sameCartItem(i,id,variant));
   save();
 }
-function renderCart(){const b=$("#cartbody"),f=$("#cartfoot"),t=subtotal();if(!cart.length){b.innerHTML='<div class="empty">Your cart is waiting for something beautiful. ♡</div>';f.innerHTML="";return}b.innerHTML=cart.map(i=>{const p=P.find(x=>x.id===i.id);return`<div class="cartitem"><img src="${p.image}" alt="${p.name}"><div><h4>${p.name}</h4><small>${i.variant?i.variant+" · ":""}${money(p.price)} / piece</small><div class="qty"><button onclick="change('${p.id}',${JSON.stringify(i.variant||"")},-1)">−</button><strong>${i.qty}</strong><button onclick="change('${p.id}',${JSON.stringify(i.variant||"")},1)">+</button><button class="remove" onclick="removeItem('${p.id}',${JSON.stringify(i.variant||"")})">Remove</button></div></div><strong>${money(p.price*i.qty)}</strong></div>`}).join("");const gift=t>=THRESHOLD,r=Math.max(0,THRESHOLD-t),pct=Math.min(100,t/THRESHOLD*100);f.innerHTML=`<div class="${gift?"gift":""}">${gift?"🎁 You've unlocked 5 FREE scented wax tablets!":"Add "+money(r)+" more to unlock 5 FREE scented wax tablets."}</div><div class="progress"><i style="width:${pct}%"></i></div><div class="total"><span>Subtotal</span><span>${money(t)}</span></div><button class="btn primary" style="width:100%" onclick="checkout()">Proceed to Checkout</button>`}
+function renderCart(){const b=$("#cartbody"),f=$("#cartfoot"),t=subtotal();if(!cart.length){b.innerHTML='<div class="empty">Your cart is waiting for something beautiful. ♡</div>';f.innerHTML="";return}b.innerHTML=cart.map(i=>{const p=P.find(x=>x.id===i.id);return`<div class="cartitem"><img src="${p.image}" alt="${p.name}"><div><h4>${p.name}</h4><small>${i.variant?i.variant+" · ":""}${money(p.price)} / piece</small><div class="qty">
+<button type="button" data-cart-action="decrease" data-cart-id="${p.id}" data-cart-variant="${String(i.variant||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;")}">−</button>
+<strong>${i.qty}</strong>
+<button type="button" data-cart-action="increase" data-cart-id="${p.id}" data-cart-variant="${String(i.variant||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;")}">+</button>
+<button type="button" class="remove" data-cart-action="remove" data-cart-id="${p.id}" data-cart-variant="${String(i.variant||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;")}">Remove</button>
+</div></div><strong>${money(p.price*i.qty)}</strong></div>`}).join("");const gift=t>=THRESHOLD,r=Math.max(0,THRESHOLD-t),pct=Math.min(100,t/THRESHOLD*100);f.innerHTML=`<div class="${gift?"gift":""}">${gift?"🎁 You've unlocked 5 FREE scented wax tablets!":"Add "+money(r)+" more to unlock 5 FREE scented wax tablets."}</div><div class="progress"><i style="width:${pct}%"></i></div><div class="total"><span>Subtotal</span><span>${money(t)}</span></div><button class="btn primary" style="width:100%" onclick="checkout()">Proceed to Checkout</button>`}
 function checkout(){if(!cart.length){toast("Your cart is empty");return}const t=subtotal(),gift=t>=THRESHOLD;$("#checkoutBody").innerHTML=`<form id="orderForm"><div class="formgrid"><div class="field"><label>Full Name *</label><input name="name" required></div><div class="field"><label>Mobile Number *</label><input name="phone" required></div><div class="field"><label>Email</label><input name="email" type="email"></div><div class="field"><label>Pincode *</label><input name="pincode" pattern="[0-9]{6}" required></div><div class="field full"><label>House / Flat / Building *</label><input name="address" required></div><div class="field"><label>Area / Street *</label><input name="area" required></div><div class="field"><label>City *</label><input name="city" required></div><div class="field"><label>State *</label><input name="state" required></div><div class="field"><label>Landmark</label><input name="landmark"></div><div class="field full"><label>Delivery instructions</label><textarea name="notes"></textarea></div></div><div class="summary"><strong>Order Summary</strong>${cart.map(i=>{const p=P.find(x=>x.id===i.id);return`<div class="summaryrow"><span>${p.name}${i.variant?` — ${i.variant}`:""} × ${i.qty}</span><span>${money(p.price*i.qty)}</span></div>`}).join("")}<div class="summaryrow"><strong>Total</strong><strong>${money(t)}</strong></div>${gift?'<div class="summaryrow" style="color:var(--green)"><span>5 free scented wax tablets</span><strong>FREE</strong></div>':""}</div><button class="btn primary" type="submit" style="width:100%">Place Order on WhatsApp</button><p style="font-size:11px;color:var(--muted)">No online payment is required. Your order will be sent to Haven N Hue on WhatsApp.</p></form>`;closeAll();$("#checkoutModal").classList.add("open");back();$("#orderForm").onsubmit=e=>{e.preventDefault();place(new FormData(e.target))}}
 function place(fd){const t=subtotal(),gift=t>=THRESHOLD,order="HH-"+new Date().getFullYear()+"-"+String(new Date().getDate()).padStart(2,"0")+"-"+String(new Date().getHours()).padStart(2,"0")+":"+String(new Date().getMinutes()).padStart(2,"0");let msg=`*HAVEN N HUE — NEW ORDER*%0A%0A*Order:* ${order}%0A*Name:* ${fd.get("name")}%0A*Phone:* ${fd.get("phone")}%0A*Email:* ${fd.get("email")||"Not provided"}%0A%0A*Address:* ${fd.get("address")}, ${fd.get("area")}, ${fd.get("city")}, ${fd.get("state")} - ${fd.get("pincode")}${fd.get("landmark")?`%0A*Landmark:* ${fd.get("landmark")}`:""}%0A%0A*Items:*`;cart.forEach(i=>{const p=P.find(x=>x.id===i.id);msg+=`%0A• ${p.name}${i.variant?` — ${i.variant}`:""} × ${i.qty} — ${money(p.price*i.qty)}`});msg+=`%0A%0A*Total:* ${money(t)}%0A*Free gift:* ${gift?"5 Mini Scented Wax Tablets":"No"}${fd.get("notes")?`%0A*Notes:* ${fd.get("notes")}`:""}`;localStorage.setItem("havenHueLastOrder",JSON.stringify({order,customer:Object.fromEntries(fd.entries()),items:cart,total:t,gift}));cart=[];save();closeAll();$("#successBody").innerHTML=`<div class="success"><div style="font-size:48px">♡</div><div class="eyebrow">Order ready</div><h1>Thank you for choosing Haven N Hue.</h1><p style="color:var(--muted)">Order number</p><div class="order">${order}</div><p style="color:var(--muted)">Send the order to us on WhatsApp to confirm it.</p><a class="btn primary" target="_blank" href="https://wa.me/${WA}?text=${msg}">Send Order on WhatsApp</a><br><br><button class="btn secondary" onclick="closeAll()">Continue Shopping</button></div>`;$("#successModal").classList.add("open");back()}
+document.addEventListener("click",function(e){
+  const btn=e.target.closest("[data-cart-action]");
+  if(!btn)return;
+  e.preventDefault();
+  e.stopPropagation();
+  const id=btn.getAttribute("data-cart-id");
+  const variant=btn.getAttribute("data-cart-variant")||"";
+  const action=btn.getAttribute("data-cart-action");
+  if(action==="decrease") window.change(id,variant,-1);
+  else if(action==="increase") window.change(id,variant,1);
+  else if(action==="remove") window.removeItem(id,variant);
+});
+window.change=change;
+window.removeItem=removeItem;
+window.add=add;
 $("#search").oninput=e=>{query=e.target.value;render()};$("#cart").onclick=openCart;$("#closeDrawer").onclick=closeAll;document.querySelector(".backdrop").onclick=closeAll;makeFilters();render();renderCart();count();
 </script>
 </body></html>
